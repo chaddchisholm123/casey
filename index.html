@@ -1,0 +1,1521 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Florida Budget Tracker</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg-primary: #0d1117;
+      --bg-secondary: #161b22;
+      --bg-tertiary: #21262d;
+      --bg-elevated: #30363d;
+      --text-primary: #e6edf3;
+      --text-secondary: #8b949e;
+      --text-muted: #6e7681;
+      --accent: #58a6ff;
+      --accent-hover: #79b8ff;
+      --success: #3fb950;
+      --success-bg: rgba(63, 185, 80, 0.15);
+      --warning: #d29922;
+      --warning-bg: rgba(210, 153, 34, 0.15);
+      --danger: #f85149;
+      --danger-bg: rgba(248, 81, 73, 0.15);
+      --border: #30363d;
+      --radius: 12px;
+      --radius-sm: 8px;
+      --shadow: 0 8px 24px rgba(0,0,0,0.4);
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    html { scroll-behavior: smooth; }
+    body {
+      font-family: 'DM Sans', -apple-system, sans-serif;
+      background: var(--bg-primary);
+      color: var(--text-primary);
+      min-height: 100vh;
+      line-height: 1.5;
+    }
+
+    .app {
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 1rem;
+    }
+
+    header {
+      padding: 1.5rem 0;
+      border-bottom: 1px solid var(--border);
+      margin-bottom: 1.5rem;
+    }
+    header h1 {
+      font-size: 1.75rem;
+      font-weight: 700;
+      background: linear-gradient(135deg, var(--accent), #a371f7);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+    header p { color: var(--text-secondary); margin-top: 0.25rem; font-size: 0.9rem; }
+
+    .tabs {
+      display: flex;
+      gap: 0.5rem;
+      margin-bottom: 1.5rem;
+      flex-wrap: wrap;
+    }
+    .tab {
+      padding: 0.6rem 1rem;
+      background: var(--bg-secondary);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+      color: var(--text-secondary);
+      cursor: pointer;
+      font-size: 0.9rem;
+      font-weight: 500;
+      transition: all 0.2s;
+    }
+    .tab:hover { background: var(--bg-tertiary); color: var(--text-primary); }
+    .tab.active { background: var(--accent); color: var(--bg-primary); border-color: var(--accent); }
+
+    .panel { display: none; }
+    .panel.active { display: block; animation: fadeIn 0.2s ease; }
+    @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+
+    .card {
+      background: var(--bg-secondary);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 1.25rem;
+      margin-bottom: 1rem;
+    }
+    .card h2 {
+      font-size: 1rem;
+      font-weight: 600;
+      margin-bottom: 1rem;
+      color: var(--text-primary);
+    }
+    .card h3 { font-size: 0.9rem; font-weight: 600; margin: 1rem 0 0.5rem; color: var(--text-secondary); }
+
+    .grid-2 { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 1rem; }
+    .grid-3 { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 1rem; }
+
+    .form-group { margin-bottom: 1rem; }
+    .form-group label {
+      display: block;
+      font-size: 0.85rem;
+      font-weight: 500;
+      color: var(--text-secondary);
+      margin-bottom: 0.4rem;
+    }
+    input, select, button {
+      font-family: inherit;
+      font-size: 0.95rem;
+    }
+    input, select {
+      width: 100%;
+      padding: 0.6rem 0.85rem;
+      background: var(--bg-tertiary);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+      color: var(--text-primary);
+    }
+    input:focus, select:focus {
+      outline: none;
+      border-color: var(--accent);
+      box-shadow: 0 0 0 2px rgba(88, 166, 255, 0.25);
+    }
+    input[type="number"] { font-family: 'JetBrains Mono', monospace; }
+
+    .btn {
+      padding: 0.6rem 1rem;
+      border-radius: var(--radius-sm);
+      font-weight: 500;
+      cursor: pointer;
+      border: none;
+      transition: all 0.2s;
+    }
+    .btn-primary {
+      background: var(--accent);
+      color: var(--bg-primary);
+    }
+    .btn-primary:hover { background: var(--accent-hover); }
+    .btn-ghost {
+      background: transparent;
+      color: var(--text-secondary);
+      border: 1px solid var(--border);
+    }
+    .btn-ghost:hover { background: var(--bg-tertiary); color: var(--text-primary); }
+    .btn-danger { background: var(--danger); color: white; }
+    .btn-sm { padding: 0.4rem 0.7rem; font-size: 0.85rem; }
+
+    .goal-progress {
+      padding: 1.5rem;
+      background: linear-gradient(135deg, var(--bg-tertiary) 0%, var(--bg-secondary) 100%);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      margin-bottom: 1rem;
+    }
+    .goal-progress h2 { margin-bottom: 1rem; }
+    .progress-bar-container {
+      height: 24px;
+      background: var(--bg-primary);
+      border-radius: 12px;
+      overflow: hidden;
+      margin: 0.5rem 0 1rem;
+    }
+    .progress-bar {
+      height: 100%;
+      background: linear-gradient(90deg, var(--success), #2ea043);
+      border-radius: 12px;
+      transition: width 0.4s ease;
+    }
+    .goal-stats {
+      display: flex;
+      gap: 1.5rem;
+      flex-wrap: wrap;
+      margin-top: 1rem;
+    }
+    .goal-stat {
+      background: var(--bg-primary);
+      padding: 0.75rem 1rem;
+      border-radius: var(--radius-sm);
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.95rem;
+    }
+    .goal-stat span { color: var(--text-secondary); font-family: 'DM Sans'; font-size: 0.8rem; }
+
+    .alert {
+      padding: 1rem;
+      border-radius: var(--radius-sm);
+      margin-bottom: 1rem;
+      display: flex;
+      align-items: flex-start;
+      gap: 0.75rem;
+    }
+    .alert-warning { background: var(--warning-bg); border: 1px solid var(--warning); color: var(--warning); }
+    .alert-danger { background: var(--danger-bg); border: 1px solid var(--danger); color: var(--danger); }
+    .alert-success { background: var(--success-bg); border: 1px solid var(--success); color: var(--success); }
+    .alert-info { background: rgba(88, 166, 255, 0.15); border: 1px solid var(--accent); color: var(--accent); }
+    .alert-icon { font-size: 1.25rem; flex-shrink: 0; }
+    .alert-content { flex: 1; }
+    .alert-title { font-weight: 600; margin-bottom: 0.25rem; }
+
+    table { width: 100%; border-collapse: collapse; font-size: 0.9rem; }
+    th, td { padding: 0.6rem 0.75rem; text-align: left; border-bottom: 1px solid var(--border); }
+    th { color: var(--text-secondary); font-weight: 500; font-size: 0.8rem; text-transform: uppercase; }
+    tr:hover td { background: var(--bg-tertiary); }
+    .mono { font-family: 'JetBrains Mono', monospace; }
+    .text-success { color: var(--success); }
+    .text-danger { color: var(--danger); }
+    .text-warning { color: var(--warning); }
+
+    .checklist { list-style: none; }
+    .checklist li {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      padding: 0.6rem 0;
+      border-bottom: 1px solid var(--border);
+    }
+    .checklist li:last-child { border-bottom: none; }
+    .checklist input[type="checkbox"] {
+      width: 20px;
+      height: 20px;
+      accent-color: var(--accent);
+      cursor: pointer;
+    }
+    .checklist .done { text-decoration: line-through; color: var(--text-muted); }
+    .checklist .pending { color: var(--text-primary); }
+
+    .chart-container {
+      height: 220px;
+      margin-top: 1rem;
+      position: relative;
+    }
+    .phase-btn.active { border-color: var(--accent) !important; background: rgba(88,166,255,0.15) !important; color: var(--accent) !important; }
+    .phase-btn:not(.active):hover { border-color: var(--text-muted) !important; color: var(--text-primary) !important; }
+
+    .scenario-badge {
+      display: inline-block;
+      padding: 0.2rem 0.5rem;
+      background: rgba(88, 166, 255, 0.2);
+      border-radius: 4px;
+      font-size: 0.75rem;
+      color: var(--accent);
+      margin-left: 0.5rem;
+    }
+
+    @media (max-width: 640px) {
+      .app { padding: 0.75rem; }
+      .goal-stats { flex-direction: column; }
+      .grid-2, .grid-3 { grid-template-columns: 1fr; }
+      header h1 { font-size: 1.4rem; }
+      .tabs { gap: 0.25rem; }
+      .tab { padding: 0.5rem 0.75rem; font-size: 0.85rem; }
+    }
+  </style>
+</head>
+<body>
+  <div class="app">
+    <header>
+      <h1>Florida Budget Tracker</h1>
+      <p>3‑month savings plan · $600/month goal · $3,000 total target</p>
+    </header>
+
+    <div class="phase-switcher" style="display:flex;gap:0.5rem;margin-bottom:1.5rem;padding:0.5rem;background:var(--bg-secondary);border-radius:var(--radius);border:1px solid var(--border);">
+      <button class="phase-btn active" data-phase="1" style="flex:1;padding:0.75rem;border-radius:var(--radius-sm);border:2px solid var(--accent);background:rgba(88,166,255,0.15);color:var(--accent);font-weight:600;cursor:pointer;transition:all 0.2s;">Phase 1: Florida Trip</button>
+      <button class="phase-btn" data-phase="2" style="flex:1;padding:0.75rem;border-radius:var(--radius-sm);border:2px solid var(--border);background:var(--bg-tertiary);color:var(--text-secondary);font-weight:600;cursor:pointer;transition:all 0.2s;">Phase 2: Post‑Florida (June–Aug)</button>
+    </div>
+
+    <!-- PHASE 1 -->
+    <div id="phase-1-section">
+    <div class="tabs tabs-phase1">
+      <button class="tab active" data-panel="overview" data-phase="1">Overview</button>
+      <button class="tab" data-panel="config" data-phase="1">Setup</button>
+      <button class="tab" data-panel="tracking" data-phase="1">Weekly Tracking</button>
+      <button class="tab" data-panel="scenarios" data-phase="1">Scenarios</button>
+      <button class="tab" data-panel="checklist" data-phase="1">Month-End Checklist</button>
+    </div>
+
+    <!-- PHASE 1 OVERVIEW -->
+    <div id="panel-overview" class="panel active">
+      <div class="goal-progress">
+        <h2>Progress to $3,000 Goal</h2>
+        <div class="progress-bar-container">
+          <div class="progress-bar" id="goal-progress-bar" style="width: 50%"></div>
+        </div>
+        <div class="goal-stats" id="goal-stats"></div>
+      </div>
+
+      <div class="grid-2">
+        <div class="card">
+          <h2>Month at a Glance</h2>
+          <div id="month-glance"></div>
+        </div>
+        <div class="card">
+          <h2>Projected Savings Over Time</h2>
+          <div class="chart-container">
+            <canvas id="chart-projections"></canvas>
+          </div>
+        </div>
+      </div>
+
+      <div class="card">
+        <h2>Warnings & Suggestions</h2>
+        <div id="warnings-suggestions"></div>
+      </div>
+    </div>
+
+    <!-- SETUP -->
+    <div id="panel-config" class="panel">
+      <div class="card">
+        <h2>Plan Period</h2>
+        <div class="grid-2">
+          <div class="form-group">
+            <label>Start Date</label>
+            <input type="date" id="config-start-date">
+          </div>
+          <div class="form-group">
+            <label>End Date</label>
+            <input type="date" id="config-end-date">
+          </div>
+        </div>
+      </div>
+
+      <div class="card">
+        <h2>Starting Balances & Goals</h2>
+        <div class="grid-3">
+          <div class="form-group">
+            <label>Starting Cash</label>
+            <input type="number" id="config-starting-cash" min="0" step="100" placeholder="1500">
+          </div>
+          <div class="form-group">
+            <label>Starting Credit Card</label>
+            <input type="number" id="config-starting-cc" min="0" step="10" placeholder="0">
+          </div>
+          <div class="form-group">
+            <label>Monthly Savings Goal</label>
+            <input type="number" id="config-monthly-goal" min="0" step="50" placeholder="600">
+          </div>
+          <div class="form-group">
+            <label>Total Savings Goal (3 months)</label>
+            <input type="number" id="config-total-goal" min="0" step="100" placeholder="3000">
+          </div>
+        </div>
+      </div>
+
+      <div class="card">
+        <h2>Rent (same each month)</h2>
+        <div class="form-group" style="max-width: 200px;">
+          <input type="number" id="config-rent" min="0" step="50" placeholder="0">
+        </div>
+      </div>
+
+      <div class="card">
+        <h2>Paychecks <span class="scenario-badge">Editable for scenarios</span></h2>
+        <p style="color: var(--text-secondary); font-size: 0.9rem; margin-bottom: 1rem;">Add each paycheck with date and amount. Amounts can vary.</p>
+        <div class="grid-2">
+          <div class="form-group">
+            <label>Pay Date</label>
+            <input type="date" id="paycheck-date">
+          </div>
+          <div class="form-group">
+            <label>Amount</label>
+            <input type="number" id="paycheck-amount" min="0" step="10" placeholder="800">
+          </div>
+        </div>
+        <button class="btn btn-primary" id="add-paycheck">Add Paycheck</button>
+        <div style="margin-top: 1rem;">
+          <table>
+            <thead><tr><th>Date</th><th>Amount</th><th>Source</th><th></th></tr></thead>
+            <tbody id="paycheck-list"></tbody>
+          </table>
+        </div>
+      </div>
+
+      <div class="card">
+        <h2>Expense Categories & Monthly Budgets</h2>
+        <p style="color: var(--text-secondary); font-size: 0.9rem; margin-bottom: 1rem;">Set a budget for each category to get warnings and suggestions.</p>
+        <div id="expense-categories"></div>
+      </div>
+    </div>
+
+    <!-- WEEKLY TRACKING -->
+    <div id="panel-tracking" class="panel">
+      <div class="card">
+        <h2>Select Month & Week</h2>
+        <div class="grid-2">
+          <div class="form-group">
+            <label>Month</label>
+            <select id="track-month"></select>
+          </div>
+          <div class="form-group">
+            <label>Week</label>
+            <select id="track-week"></select>
+          </div>
+        </div>
+      </div>
+      <div class="card">
+        <h2>Weekly Budget Guide</h2>
+        <div id="weekly-budget-guide" style="margin-bottom:1rem;padding:0.75rem;background:var(--bg-tertiary);border-radius:var(--radius-sm);color:var(--text-secondary);font-size:0.9rem;"></div>
+      </div>
+      <div class="card">
+        <h2>Weekly Spending</h2>
+        <div id="weekly-spending-inputs"></div>
+      </div>
+    </div>
+
+    <!-- SCENARIOS -->
+    <div id="panel-scenarios" class="panel">
+      <div class="card">
+        <h2>Scenario Mode</h2>
+        <p style="color: var(--text-secondary); margin-bottom: 1rem;">Adjust any value below to see how it affects your goal. Example: increase next paycheck to model overtime or a side job.</p>
+        <div class="alert alert-info">
+          <span class="alert-icon">💡</span>
+          <div class="alert-content">
+            <div class="alert-title">All Setup values are scenario-adjustable</div>
+            Edit paychecks, budgets, starting balances, and spending in the Setup and Weekly Tracking tabs. Changes update projections in real time.
+          </div>
+        </div>
+      </div>
+      <div class="card">
+        <h2>Quick Scenario: Adjust Next Paycheck</h2>
+        <div id="quick-scenario-paycheck"></div>
+      </div>
+    </div>
+
+    <!-- MONTH-END CHECKLIST -->
+    <div id="panel-checklist" class="panel">
+      <div class="card">
+        <h2>Month-End Checklist</h2>
+        <p style="color: var(--text-secondary); margin-bottom: 1rem;">Use this at the end of each month to stay on track.</p>
+        <select id="checklist-month" style="max-width: 200px; margin-bottom: 1rem;"></select>
+        <div id="month-checklist"></div>
+      </div>
+    </div>
+    </div>
+
+    <!-- PHASE 2 -->
+    <div id="phase-2-section" style="display:none;">
+    <div class="tabs tabs-phase2">
+      <button class="tab active" data-panel="p2-overview" data-phase="2">Overview</button>
+      <button class="tab" data-panel="p2-config" data-phase="2">Setup</button>
+      <button class="tab" data-panel="p2-tracking" data-phase="2">Weekly Tracking</button>
+      <button class="tab" data-panel="p2-scenarios" data-phase="2">Scenarios</button>
+    </div>
+
+    <div id="panel-p2-overview" class="panel active">
+      <div class="card">
+        <h2>Starting Cash <span class="scenario-badge">From Phase 1</span></h2>
+        <p style="color:var(--text-secondary);margin-bottom:0.75rem;">Auto-updates from your Florida trip projected ending balance.</p>
+        <div class="goal-stats">
+          <div class="goal-stat">Phase 1 projected ending: $<span id="p2-starting-display">0</span></div>
+        </div>
+      </div>
+      <div class="card">
+        <h2>Cash Runway & Monthly Projections</h2>
+        <div id="p2-month-glance"></div>
+      </div>
+      <div class="card">
+        <h2>Income Gap Calculator</h2>
+        <p style="color:var(--text-secondary);margin-bottom:1rem;">At $400/mo income, how much will you need from savings? Adjust income below to see how much extra you need to make.</p>
+        <div id="p2-income-gap"></div>
+      </div>
+      <div class="card">
+        <h2>Savings Drawdown Over Time</h2>
+        <div class="chart-container"><canvas id="chart-p2"></canvas></div>
+      </div>
+      <div class="card">
+        <h2>Warnings & Suggestions</h2>
+        <div id="p2-warnings"></div>
+      </div>
+    </div>
+
+    <div id="panel-p2-config" class="panel">
+      <div class="card">
+        <h2>Plan Period</h2>
+        <div class="grid-2">
+          <div class="form-group">
+            <label>Start Date (return from Florida)</label>
+            <input type="date" id="p2-start-date">
+          </div>
+          <div class="form-group">
+            <label>End Date</label>
+            <input type="date" id="p2-end-date">
+          </div>
+        </div>
+      </div>
+      <div class="card">
+        <h2>Monthly Income <span class="scenario-badge">$400 preset, editable</span></h2>
+        <p style="color:var(--text-secondary);margin-bottom:1rem;">Preset to $400/mo. Increase to model side jobs or extra hours.</p>
+        <div id="p2-monthly-income"></div>
+      </div>
+      <div class="card">
+        <h2>Expense Categories (no rent)</h2>
+        <p style="color:var(--text-secondary);margin-bottom:1rem;">Same as Phase 1 minus Rent. Set monthly budgets for projections.</p>
+        <div id="p2-expense-categories"></div>
+      </div>
+    </div>
+
+    <div id="panel-p2-tracking" class="panel">
+      <div class="card">
+        <h2>Select Month & Week</h2>
+        <div class="grid-2">
+          <div class="form-group">
+            <label>Month</label>
+            <select id="p2-track-month"></select>
+          </div>
+          <div class="form-group">
+            <label>Week</label>
+            <select id="p2-track-week"></select>
+          </div>
+        </div>
+      </div>
+      <div class="card">
+        <h2>Weekly Spending</h2>
+        <div id="p2-weekly-spending-inputs"></div>
+      </div>
+    </div>
+
+    <div id="panel-p2-scenarios" class="panel">
+      <div class="card">
+        <h2>Scenario Mode</h2>
+        <p style="color:var(--text-secondary);margin-bottom:1rem;">Adjust monthly income in Setup to see how much extra you need to make each month. Example: set June to $600 to model $200 from a side gig.</p>
+        <div class="alert alert-info">
+          <span class="alert-icon">💡</span>
+          <div class="alert-content">
+            <div class="alert-title">Quick scenario</div>
+            Increase June, July, or August income in the Setup tab to see if you'll make it through without draining savings.
+          </div>
+        </div>
+      </div>
+    </div>
+    </div>
+  </div>
+
+  <script>
+    // ─── Default data ─────────────────────────────────────────────────────────
+    const DEFAULT_CATEGORIES = [
+      { id: 'car', name: 'Car', monthlyBudget: 0 },
+      { id: 'charging', name: 'Charging car', monthlyBudget: 0 },
+      { id: 'phone', name: 'Phone bill', monthlyBudget: 0 },
+      { id: 'medicine', name: 'Medicine', monthlyBudget: 0 },
+      { id: 'food', name: 'Food', monthlyBudget: 0 },
+      { id: 'fun', name: 'Fun', monthlyBudget: 0 },
+      { id: 'rent', name: 'Rent', monthlyBudget: 0 },
+      { id: 'dogfood', name: 'Dog food', monthlyBudget: 0 },
+      { id: 'other1', name: 'Other 1', monthlyBudget: 0 },
+      { id: 'other2', name: 'Other 2', monthlyBudget: 0 },
+      { id: 'other3', name: 'Other 3', monthlyBudget: 0 },
+      { id: 'other4', name: 'Other 4', monthlyBudget: 0 },
+      { id: 'other5', name: 'Other 5', monthlyBudget: 0 },
+    ];
+
+    const STORAGE_KEY = 'florida_budget_data';
+
+    // ─── State ────────────────────────────────────────────────────────────────
+    let state = {
+      planStart: null,
+      planEnd: null,
+      startingCash: 1500,
+      startingCC: 0,
+      monthlySavingsGoal: 600,
+      totalSavingsGoal: 3000,
+      rent: 0,
+      categories: [],
+      paychecks: [],
+      spending: {},
+      checklistDone: {},
+      creditCardBalance: {},
+      // Phase 2: Post-Florida (June–Aug)
+      currentPhase: 1,
+      phase2Start: null,
+      phase2End: null,
+      phase2MonthlyIncome: {},
+      phase2Categories: [],
+      phase2Spending: {},
+    };
+
+    // ─── Init ─────────────────────────────────────────────────────────────────
+    function init() {
+      loadState();
+      ensureCategories();
+      ensurePlanDates();
+      ensurePhase2Data();
+      syncRentToCategories();
+      bindPhaseSwitcher();
+      bindTabs();
+      bindConfig();
+      bindPaychecks();
+      bindTracking();
+      bindChecklist();
+      bindPhase2();
+      renderAll();
+    }
+
+    function loadState() {
+      try {
+        const raw = localStorage.getItem(STORAGE_KEY);
+        if (raw) {
+          const parsed = JSON.parse(raw);
+          state = { ...state, ...parsed };
+          if (parsed.categories?.length) state.categories = parsed.categories;
+          if (parsed.phase2Categories?.length) state.phase2Categories = parsed.phase2Categories;
+        }
+      } catch (e) {
+        console.warn('Could not load saved data:', e);
+      }
+    }
+
+    function saveState() {
+      try {
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+      } catch (e) {
+        console.warn('Could not save data:', e);
+      }
+    }
+
+    function ensureCategories() {
+      if (!state.categories?.length) state.categories = JSON.parse(JSON.stringify(DEFAULT_CATEGORIES));
+    }
+
+    function ensurePlanDates() {
+      const now = new Date();
+      if (!state.planStart) {
+        const m = now.getMonth() + 1;
+        state.planStart = `${now.getFullYear()}-${String(m).padStart(2, '0')}-01`;
+      }
+      if (!state.planEnd) {
+        const end = new Date(now.getFullYear(), now.getMonth() + 3, 0);
+        state.planEnd = `${end.getFullYear()}-${String(end.getMonth() + 1).padStart(2, '0')}-${String(end.getDate()).padStart(2, '0')}`;
+      }
+    }
+
+    function syncRentToCategories() {
+      const rentCat = state.categories.find(c => c.id === 'rent');
+      if (rentCat) rentCat.monthlyBudget = state.rent;
+    }
+
+    function ensurePhase2Data() {
+      const now = new Date();
+      if (!state.phase2Start) state.phase2Start = `${now.getFullYear()}-06-01`;
+      if (!state.phase2End) state.phase2End = `${now.getFullYear()}-08-31`;
+      if (!state.phase2Categories?.length) {
+        state.phase2Categories = (state.categories || [])
+          .filter(c => c.id !== 'rent')
+          .map(c => ({ ...c }));
+      }
+      const months = getPhase2Months();
+      months.forEach(m => {
+        if (state.phase2MonthlyIncome[m.key] === undefined)
+          state.phase2MonthlyIncome[m.key] = 400;
+      });
+    }
+
+    function getPhase2Months() {
+      if (!state.phase2Start || !state.phase2End) return [];
+      const [startY, startM] = state.phase2Start.split('-').map(Number);
+      const [endY, endM] = state.phase2End.split('-').map(Number);
+      const months = [];
+      let y = startY, m = startM;
+      while (y < endY || (y === endY && m <= endM)) {
+        months.push({
+          key: `${y}-${String(m).padStart(2, '0')}`,
+          label: new Date(y, m - 1, 1).toLocaleDateString('en-US', { month: 'long', year: 'numeric' }),
+        });
+        if (m === 12) { m = 1; y++; } else { m++; }
+      }
+      return months;
+    }
+
+    function bindPhaseSwitcher() {
+      document.getElementById('phase-1-section').style.display = state.currentPhase === 1 ? 'block' : 'none';
+      document.getElementById('phase-2-section').style.display = state.currentPhase === 2 ? 'block' : 'none';
+      document.querySelectorAll('.phase-btn').forEach(b => {
+        b.classList.toggle('active', parseInt(b.dataset.phase) === state.currentPhase);
+      });
+      document.querySelectorAll('.phase-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+          state.currentPhase = parseInt(btn.dataset.phase);
+          document.querySelectorAll('.phase-btn').forEach(b => b.classList.remove('active'));
+          btn.classList.add('active');
+          document.getElementById('phase-1-section').style.display = state.currentPhase === 1 ? 'block' : 'none';
+          document.getElementById('phase-2-section').style.display = state.currentPhase === 2 ? 'block' : 'none';
+          saveState();
+          renderAll();
+        });
+      });
+    }
+
+    // ─── Tabs ──────────────────────────────────────────────────────────────────
+    function bindTabs() {
+      document.querySelectorAll('.tab').forEach(t => {
+        t.addEventListener('click', () => {
+          const phase = parseInt(t.dataset.phase) || 1;
+          const panelId = 'panel-' + t.dataset.panel;
+          const section = phase === 1 ? document.getElementById('phase-1-section') : document.getElementById('phase-2-section');
+          section.querySelectorAll('.tab').forEach(x => x.classList.remove('active'));
+          section.querySelectorAll('.panel').forEach(x => x.classList.remove('active'));
+          t.classList.add('active');
+          const targetPanel = document.getElementById(panelId);
+          if (targetPanel) targetPanel.classList.add('active');
+          renderAll();
+        });
+      });
+    }
+
+    // ─── Config bindings ──────────────────────────────────────────────────────
+    function bindConfig() {
+      const ids = [
+        'config-start-date', 'config-end-date', 'config-starting-cash', 'config-starting-cc',
+        'config-monthly-goal', 'config-total-goal', 'config-rent'
+      ];
+      ids.forEach(id => {
+        const el = document.getElementById(id);
+        if (!el) return;
+        if (id === 'config-start-date') el.value = state.planStart || '';
+        if (id === 'config-end-date') el.value = state.planEnd || '';
+        if (id === 'config-starting-cash') el.value = state.startingCash ?? 1500;
+        if (id === 'config-starting-cc') el.value = state.startingCC ?? 0;
+        if (id === 'config-monthly-goal') el.value = state.monthlySavingsGoal ?? 600;
+        if (id === 'config-total-goal') el.value = state.totalSavingsGoal ?? 3000;
+        if (id === 'config-rent') el.value = state.rent ?? 0;
+
+        el.addEventListener('change', () => {
+          const v = el.value;
+          if (id === 'config-start-date') state.planStart = v;
+          if (id === 'config-end-date') state.planEnd = v;
+          if (id === 'config-starting-cash') state.startingCash = parseFloat(v) || 0;
+          if (id === 'config-starting-cc') state.startingCC = parseFloat(v) || 0;
+          if (id === 'config-monthly-goal') state.monthlySavingsGoal = parseFloat(v) || 0;
+          if (id === 'config-total-goal') state.totalSavingsGoal = parseFloat(v) || 0;
+          if (id === 'config-rent') {
+            state.rent = parseFloat(v) || 0;
+            syncRentToCategories();
+          }
+          saveState();
+          renderAll();
+        });
+      });
+    }
+
+    function bindPaychecks() {
+      document.getElementById('add-paycheck').addEventListener('click', () => {
+        const date = document.getElementById('paycheck-date').value;
+        const amount = parseFloat(document.getElementById('paycheck-amount').value) || 0;
+        if (!date || amount <= 0) return;
+        state.paychecks.push({ date, amount, source: 'Main job' });
+        state.paychecks.sort((a, b) => a.date.localeCompare(b.date));
+        saveState();
+        renderAll();
+      });
+    }
+
+    function bindTracking() {
+      document.getElementById('track-month').addEventListener('change', () => renderTracking());
+      document.getElementById('track-week').addEventListener('change', () => renderTracking());
+    }
+
+    function bindChecklist() {
+      document.getElementById('checklist-month').addEventListener('change', () => renderChecklist());
+    }
+
+    // ─── Calculations ──────────────────────────────────────────────────────────
+    function getMonthsInPlan() {
+      if (!state.planStart || !state.planEnd) return [];
+      const [startY, startM] = state.planStart.split('-').map(Number);
+      const [endY, endM] = state.planEnd.split('-').map(Number);
+      const months = [];
+      let y = startY, m = startM;
+      while (y < endY || (y === endY && m <= endM)) {
+        months.push({
+          key: `${y}-${String(m).padStart(2, '0')}`,
+          label: new Date(y, m - 1, 1).toLocaleDateString('en-US', { month: 'long', year: 'numeric' }),
+          year: y,
+          month: m - 1,
+        });
+        if (m === 12) { m = 1; y++; } else { m++; }
+      }
+      return months;
+    }
+
+    function getIncomeForMonth(monthKey) {
+      return (state.paychecks || [])
+        .filter(p => p.date.startsWith(monthKey))
+        .reduce((sum, p) => sum + (p.amount || 0), 0);
+    }
+
+    function getSpendingForMonth(monthKey) {
+      const catIds = state.categories.map(c => c.id);
+      let total = 0;
+      for (let w = 1; w <= 5; w++) {
+        const key = `${monthKey}-${w}`;
+        const weekData = state.spending[key] || {};
+        catIds.forEach(id => {
+          total += parseFloat(weekData[id]) || 0;
+        });
+      }
+      return total;
+    }
+
+    function getSpendingByCategoryForMonth(monthKey) {
+      const byCat = {};
+      state.categories.forEach(c => { byCat[c.id] = 0; });
+      for (let w = 1; w <= 5; w++) {
+        const key = `${monthKey}-${w}`;
+        const weekData = state.spending[key] || {};
+        Object.keys(weekData).forEach(id => {
+          if (byCat[id] !== undefined) byCat[id] += parseFloat(weekData[id]) || 0;
+        });
+      }
+      return byCat;
+    }
+
+    function getProjectedSavings() {
+      const months = getMonthsInPlan();
+      let cash = state.startingCash;
+      const projections = [];
+      for (const m of months) {
+        const income = getIncomeForMonth(m.key);
+        const expenses = getSpendingForMonth(m.key);
+        const net = income - expenses;
+        cash += net;
+        projections.push({
+          monthKey: m.key,
+          label: m.label,
+          income,
+          expenses,
+          net,
+          endingCash: cash,
+          goalMet: net >= state.monthlySavingsGoal,
+        });
+      }
+      return { projections, endingCash: cash };
+    }
+
+    function getWeekBounds(monthKey, weekNum) {
+      const [y, m] = monthKey.split('-').map(Number);
+      const startDay = (weekNum - 1) * 7 + 1;
+      const endDay = Math.min(weekNum * 7, new Date(y, m, 0).getDate());
+      return { startDay, endDay };
+    }
+
+    // ─── Warnings & suggestions ────────────────────────────────────────────────
+    function getWarningsAndSuggestions() {
+      const alerts = [];
+      const months = getMonthsInPlan();
+      const { projections } = getProjectedSavings();
+
+      projections.forEach((proj, i) => {
+        if (proj.net < state.monthlySavingsGoal && proj.net !== 0) {
+          alerts.push({
+            type: 'warning',
+            title: `${proj.label}: Below $${state.monthlySavingsGoal} goal`,
+            msg: `Projected net: $${proj.net.toFixed(0)}. Need $${(state.monthlySavingsGoal - proj.net).toFixed(0)} more to hit goal.`,
+          });
+        }
+      });
+
+      const { endingCash } = getProjectedSavings();
+      if (endingCash < state.totalSavingsGoal) {
+        alerts.push({
+          type: 'danger',
+          title: 'Total savings goal at risk',
+          msg: `Projected ending cash: $${endingCash.toFixed(0)}. Need $${(state.totalSavingsGoal - endingCash).toFixed(0)} more. Consider extra income or cutting expenses.`,
+        });
+      } else if (endingCash >= state.totalSavingsGoal) {
+        alerts.push({
+          type: 'success',
+          title: 'On track for total goal',
+          msg: `Projected ending: $${endingCash.toFixed(0)} (goal: $${state.totalSavingsGoal}).`,
+        });
+      }
+
+      // Category overspend suggestions
+      months.forEach(m => {
+        const byCat = getSpendingByCategoryForMonth(m.key);
+        const budgets = {};
+        state.categories.forEach(c => { budgets[c.id] = c.monthlyBudget || 0; });
+        const over = [];
+        Object.keys(byCat).forEach(id => {
+          const spent = byCat[id];
+          const budget = budgets[id];
+          if (budget > 0 && spent > budget) {
+            const cat = state.categories.find(c => c.id === id);
+            over.push({ name: cat?.name || id, over: spent - budget });
+          }
+        });
+        if (over.length) {
+          const flexible = ['food', 'fun', 'other1', 'other2', 'other3', 'other4', 'other5'];
+          const suggestions = flexible.filter(id => {
+            const spent = byCat[id] || 0;
+            const budget = budgets[id] || 0;
+            return budget > 0 && spent < budget;
+          }).slice(0, 2);
+          const sugNames = suggestions.map(id => state.categories.find(c => c.id === id)?.name || id).join(', ');
+          alerts.push({
+            type: 'info',
+            title: `${m.label}: Over budget in ${over.map(x => x.name).join(', ')}`,
+            msg: sugNames ? `Consider reducing spending in ${sugNames} next week to balance out.` : 'Look for areas to cut back.',
+          });
+        }
+      });
+
+      Object.entries(state.creditCardBalance || {}).forEach(([monthKey, bal]) => {
+        if (bal > 0 && months.some(m => m.key === monthKey)) {
+          alerts.push({
+            type: 'warning',
+            title: `Credit card balance: $${bal.toFixed(0)} (${monthKey})`,
+            msg: 'Pay off before month end to stay on track.',
+          });
+        }
+      });
+
+      if (alerts.length === 0) {
+        alerts.push({ type: 'success', title: 'All good', msg: 'No warnings. Keep tracking!' });
+      }
+      return alerts;
+    }
+
+    // ─── Phase 2 calculations ──────────────────────────────────────────────────
+    function getPhase1EndingCash() {
+      const { endingCash } = getProjectedSavings();
+      return endingCash;
+    }
+
+    function getPhase2StartingCash() {
+      return getPhase1EndingCash();
+    }
+
+    function getPhase2ExpensesForMonth(monthKey) {
+      const bySpending = {};
+      (state.phase2Categories || []).forEach(c => { bySpending[c.id] = 0; });
+      for (let w = 1; w <= 5; w++) {
+        const key = `p2-${monthKey}-${w}`;
+        const weekData = (state.phase2Spending || {})[key] || {};
+        Object.keys(weekData).forEach(id => {
+          if (bySpending[id] !== undefined) bySpending[id] += parseFloat(weekData[id]) || 0;
+        });
+      }
+      const totalSpent = Object.values(bySpending).reduce((a, b) => a + b, 0);
+      const totalBudget = (state.phase2Categories || []).reduce((s, c) => s + (c.monthlyBudget || 0), 0);
+      return totalSpent > 0 ? totalSpent : totalBudget;
+    }
+
+    function getPhase2Projections() {
+      const months = getPhase2Months();
+      let cash = getPhase2StartingCash();
+      const projections = [];
+      for (const m of months) {
+        const income = state.phase2MonthlyIncome[m.key] ?? 400;
+        const expenses = getPhase2ExpensesForMonth(m.key);
+        const net = income - expenses;
+        cash += net;
+        projections.push({
+          monthKey: m.key,
+          label: m.label,
+          income,
+          expenses,
+          net,
+          endingCash: cash,
+          runsOut: cash < 0,
+        });
+      }
+      return { projections, endingCash: cash };
+    }
+
+    function getPhase2Warnings() {
+      const alerts = [];
+      const { projections, endingCash } = getPhase2Projections();
+      if (endingCash < 0) {
+        const monthOut = projections.find(p => p.endingCash < 0);
+        alerts.push({
+          type: 'danger',
+          title: 'Savings run out',
+          msg: `At current income & expenses, you run out around ${monthOut?.label || 'N/A'}. You need to increase income or reduce expenses.`,
+        });
+      } else {
+        alerts.push({
+          type: 'success',
+          title: 'On track',
+          msg: `You'll end with $${endingCash.toFixed(0)}. Adjust income in Setup to see how much extra you need to make.`,
+        });
+      }
+      projections.forEach(p => {
+        if (p.net < 0 && p.income <= 500) {
+          const needMore = -p.net;
+          alerts.push({
+            type: 'warning',
+            title: `${p.label}: Drawing $${needMore.toFixed(0)} from savings`,
+            msg: `Income $${p.income.toFixed(0)} vs expenses $${p.expenses.toFixed(0)}. To break even this month, need $${needMore.toFixed(0)} more income.`,
+          });
+        }
+      });
+      if (alerts.length === 0) alerts.push({ type: 'info', title: 'Review', msg: 'Set budgets in Setup to see projections.' });
+      return alerts;
+    }
+
+    // ─── Render ───────────────────────────────────────────────────────────────
+    function renderAll() {
+      renderOverview();
+      renderConfig();
+      renderTracking();
+      renderScenarios();
+      renderChecklist();
+      renderPhase2();
+    }
+
+    function renderOverview() {
+      const { projections, endingCash } = getProjectedSavings();
+      const pct = Math.min(100, Math.max(0, (endingCash / state.totalSavingsGoal) * 100));
+      document.getElementById('goal-progress-bar').style.width = pct + '%';
+      document.getElementById('goal-stats').innerHTML = `
+        <div class="goal-stat">Starting: $<span>${state.startingCash.toFixed(0)}</span></div>
+        <div class="goal-stat">Projected: $<span>${endingCash.toFixed(0)}</span></div>
+        <div class="goal-stat">Goal: $<span>${state.totalSavingsGoal.toFixed(0)}</span></div>
+      `;
+
+      document.getElementById('month-glance').innerHTML = projections.map(p => `
+        <div style="margin-bottom: 0.75rem; padding: 0.75rem; background: var(--bg-tertiary); border-radius: var(--radius-sm);">
+          <div style="font-weight: 600; margin-bottom: 0.25rem;">${p.label}</div>
+          <div style="font-size: 0.85rem; color: var(--text-secondary);">
+            Income: $${p.income.toFixed(0)} · Expenses: $${p.expenses.toFixed(0)} · Net: <span class="${p.goalMet ? 'text-success' : 'text-danger'}">$${p.net.toFixed(0)}</span>
+          </div>
+          <div style="font-size: 0.8rem; color: var(--text-muted);">Ending cash: $${p.endingCash.toFixed(0)}</div>
+        </div>
+      `).join('') || '<p style="color: var(--text-muted);">Configure dates and paychecks in Setup.</p>';
+
+      const alerts = getWarningsAndSuggestions();
+      document.getElementById('warnings-suggestions').innerHTML = alerts.map(a => `
+        <div class="alert alert-${a.type}">
+          <span class="alert-icon">${a.type === 'success' ? '✓' : a.type === 'danger' ? '!' : a.type === 'warning' ? '⚠' : 'ℹ'}</span>
+          <div class="alert-content">
+            <div class="alert-title">${a.title}</div>
+            <div>${a.msg}</div>
+          </div>
+        </div>
+      `).join('');
+
+      renderChart(projections);
+    }
+
+    function renderChart(projections) {
+      const canvas = document.getElementById('chart-projections');
+      if (!canvas) return;
+      const ctx = canvas.getContext('2d');
+      const rect = canvas.getBoundingClientRect();
+      canvas.width = rect.width;
+      canvas.height = rect.height;
+      const w = canvas.width;
+      const h = canvas.height;
+      ctx.clearRect(0, 0, w, h);
+
+      if (!projections.length) return;
+      const labels = projections.map(p => p.label.split(' ')[0]);
+      const values = projections.map(p => p.endingCash);
+      const maxVal = Math.max(...values, state.totalSavingsGoal);
+      const pad = { l: 40, r: 20, t: 20, b: 30 };
+      const gx = w - pad.l - pad.r;
+      const gy = h - pad.t - pad.b;
+      const barW = gx / (values.length * 2);
+
+      ctx.fillStyle = getComputedStyle(document.documentElement).getPropertyValue('--text-secondary').trim() || '#8b949e';
+      ctx.font = '12px DM Sans';
+      ctx.textAlign = 'center';
+      labels.forEach((l, i) => {
+        const x = pad.l + (i + 0.5) * (gx / values.length);
+        ctx.fillText(l, x, h - 8);
+      });
+
+      ctx.strokeStyle = getComputedStyle(document.documentElement).getPropertyValue('--border').trim() || '#30363d';
+      ctx.lineWidth = 1;
+      ctx.beginPath();
+      ctx.moveTo(pad.l, pad.t);
+      ctx.lineTo(pad.l, h - pad.b);
+      ctx.lineTo(w - pad.r, h - pad.b);
+      ctx.stroke();
+
+      const goalY = pad.t + gy * (1 - state.totalSavingsGoal / maxVal);
+      ctx.strokeStyle = getComputedStyle(document.documentElement).getPropertyValue('--success').trim() || '#3fb950';
+      ctx.setLineDash([4, 4]);
+      ctx.beginPath();
+      ctx.moveTo(pad.l, goalY);
+      ctx.lineTo(w - pad.r, goalY);
+      ctx.stroke();
+      ctx.setLineDash([]);
+      ctx.fillStyle = getComputedStyle(document.documentElement).getPropertyValue('--success').trim() || '#3fb950';
+      ctx.font = '10px DM Sans';
+      ctx.textAlign = 'left';
+      ctx.fillText('Goal', pad.l + 4, goalY - 4);
+
+      values.forEach((v, i) => {
+        const x = pad.l + i * (gx / values.length) + (gx / values.length - barW) / 2;
+        const barH = (v / maxVal) * gy;
+        const y = h - pad.b - barH;
+        const successColor = getComputedStyle(document.documentElement).getPropertyValue('--success').trim() || '#3fb950';
+        const accentColor = getComputedStyle(document.documentElement).getPropertyValue('--accent').trim() || '#58a6ff';
+        ctx.fillStyle = v >= state.totalSavingsGoal ? successColor : accentColor;
+        ctx.fillRect(x, y, barW, barH);
+      });
+    }
+
+    function renderConfig() {
+      document.getElementById('config-start-date').value = state.planStart || '';
+      document.getElementById('config-end-date').value = state.planEnd || '';
+      document.getElementById('config-starting-cash').value = state.startingCash ?? 1500;
+      document.getElementById('config-starting-cc').value = state.startingCC ?? 0;
+      document.getElementById('config-monthly-goal').value = state.monthlySavingsGoal ?? 600;
+      document.getElementById('config-total-goal').value = state.totalSavingsGoal ?? 3000;
+      document.getElementById('config-rent').value = state.rent ?? 0;
+
+      document.getElementById('paycheck-list').innerHTML = (state.paychecks || []).map((p, i) => `
+        <tr>
+          <td><input type="date" value="${p.date}" data-i="${i}" data-f="date" style="width:100%;max-width:140px;padding:0.4rem;"></td>
+          <td><input type="number" value="${p.amount}" data-i="${i}" data-f="amount" min="0" step="10" style="width:100%;max-width:100px;padding:0.4rem;"></td>
+          <td><input type="text" value="${p.source || ''}" data-i="${i}" data-f="source" placeholder="Source" style="width:100%;max-width:120px;padding:0.4rem;"></td>
+          <td><button class="btn btn-ghost btn-sm" data-remove-paycheck="${i}">Remove</button></td>
+        </tr>
+      `).join('') || '<tr><td colspan="4" style="color:var(--text-muted);">No paychecks added yet.</td></tr>';
+
+      document.querySelectorAll('[data-remove-paycheck]').forEach(btn => {
+        btn.addEventListener('click', () => {
+          state.paychecks.splice(parseInt(btn.dataset.removePaycheck), 1);
+          saveState();
+          renderAll();
+        });
+      });
+      document.querySelectorAll('#paycheck-list input').forEach(inp => {
+        inp.addEventListener('change', () => {
+          const i = parseInt(inp.dataset.i);
+          const f = inp.dataset.f;
+          if (state.paychecks[i]) state.paychecks[i][f] = f === 'amount' ? parseFloat(inp.value) || 0 : inp.value;
+          saveState();
+          renderAll();
+        });
+      });
+
+      document.getElementById('expense-categories').innerHTML = state.categories.map(c => `
+        <div class="form-group" style="display:flex;gap:0.75rem;align-items:end;flex-wrap:wrap;">
+          <div style="flex:1;min-width:140px;">
+            <label>${c.name}</label>
+            <input type="text" value="${c.name}" data-id="${c.id}" data-f="name" placeholder="Category name">
+          </div>
+          <div style="width:120px;">
+            <label>Monthly budget</label>
+            <input type="number" value="${c.monthlyBudget || ''}" data-id="${c.id}" data-f="monthlyBudget" min="0" step="10" placeholder="0">
+          </div>
+        </div>
+      `).join('');
+      document.querySelectorAll('#expense-categories input').forEach(inp => {
+        inp.addEventListener('change', () => {
+          const cat = state.categories.find(x => x.id === inp.dataset.id);
+          if (cat) {
+            const f = inp.dataset.f;
+            cat[f] = f === 'monthlyBudget' ? parseFloat(inp.value) || 0 : inp.value;
+            if (cat.id === 'rent') state.rent = cat.monthlyBudget || 0;
+            saveState();
+            renderAll();
+          }
+        });
+      });
+    }
+
+    function renderTracking() {
+      const months = getMonthsInPlan();
+      const monthSel = document.getElementById('track-month');
+      const curMonth = monthSel.value || (months[0]?.key || '');
+      monthSel.innerHTML = months.map(m => `<option value="${m.key}" ${m.key === curMonth ? 'selected' : ''}>${m.label}</option>`).join('');
+
+      const weekSel = document.getElementById('track-week');
+      const weeks = [1, 2, 3, 4, 5];
+      const curWeek = weekSel.value || '1';
+      weekSel.innerHTML = weeks.map(w => `<option value="${w}" ${w == curWeek ? 'selected' : ''}>Week ${w}</option>`).join('');
+
+      const monthKey = monthSel.value || months[0]?.key;
+      const weekNum = parseInt(weekSel.value) || 1;
+      const spendKey = `${monthKey}-${weekNum}`;
+      const weekData = state.spending[spendKey] || {};
+      const { startDay, endDay } = getWeekBounds(monthKey, weekNum);
+
+      const income = getIncomeForMonth(monthKey);
+      const maxExpenses = income - state.monthlySavingsGoal;
+      let spentSoFar = 0;
+      for (let w = 1; w < weekNum; w++) {
+        const k = `${monthKey}-${w}`;
+        const d = state.spending[k] || {};
+        state.categories.forEach(c => { spentSoFar += parseFloat(d[c.id]) || 0; });
+      }
+      const remaining = maxExpenses - spentSoFar;
+      const weeksLeft = 5 - weekNum + 1;
+      const weeklyTarget = weeksLeft > 0 ? remaining / weeksLeft : 0;
+      document.getElementById('weekly-budget-guide').innerHTML = income > 0 ? `
+        To hit $${state.monthlySavingsGoal} savings: max expenses = $${maxExpenses.toFixed(0)}. 
+        Spent so far: $${spentSoFar.toFixed(0)}. Remaining: $${remaining.toFixed(0)}. 
+        This week target: ~$${weeklyTarget.toFixed(0)}.
+      ` : 'Add paychecks in Setup to see weekly budget guide.';
+
+      document.getElementById('weekly-spending-inputs').innerHTML = `
+        <p style="color: var(--text-secondary); margin-bottom: 1rem; font-size: 0.9rem;">Days ${startDay}-${endDay}</p>
+        <div class="grid-2">
+          ${state.categories.map(c => `
+            <div class="form-group">
+              <label>${c.name}</label>
+              <input type="number" class="spend-input" data-key="${spendKey}" data-cat="${c.id}" value="${weekData[c.id] || ''}" min="0" step="0.01" placeholder="0">
+            </div>
+          `).join('')}
+        </div>
+      `;
+      document.querySelectorAll('.spend-input').forEach(inp => {
+        inp.addEventListener('change', () => {
+          const key = inp.dataset.key;
+          const cat = inp.dataset.cat;
+          if (!state.spending[key]) state.spending[key] = {};
+          state.spending[key][cat] = parseFloat(inp.value) || 0;
+          saveState();
+          renderOverview();
+        });
+      });
+    }
+
+    function renderScenarios() {
+      const months = getMonthsInPlan();
+      const nextMonth = months[0]?.key;
+      const nextPaychecks = (state.paychecks || []).filter(p => p.date.startsWith(nextMonth));
+      document.getElementById('quick-scenario-paycheck').innerHTML = nextPaychecks.length ? `
+        <p style="color: var(--text-secondary); margin-bottom: 0.75rem;">Edit amounts in the Setup tab to model overtime or side jobs. Projections update automatically.</p>
+        <div class="grid-2">
+          ${nextPaychecks.map((p, i) => {
+            const idx = state.paychecks.findIndex(x => x === p);
+            return `
+              <div class="form-group">
+                <label>${p.date} (${p.source || 'Paycheck'})</label>
+                <input type="number" value="${p.amount}" data-paycheck-idx="${idx}" min="0" step="10" placeholder="Amount">
+              </div>
+            `;
+          }).join('')}
+        </div>
+      ` : '<p style="color: var(--text-muted);">Add paychecks in Setup to use scenario adjustments.</p>';
+      document.querySelectorAll('[data-paycheck-idx]').forEach(inp => {
+        inp.addEventListener('change', () => {
+          const idx = parseInt(inp.dataset.paycheckIdx);
+          if (state.paychecks[idx]) state.paychecks[idx].amount = parseFloat(inp.value) || 0;
+          saveState();
+          renderAll();
+        });
+      });
+    }
+
+    function renderChecklist() {
+      const months = getMonthsInPlan();
+      const sel = document.getElementById('checklist-month');
+      const cur = sel.value || months[0]?.key;
+      sel.innerHTML = months.map(m => `<option value="${m.key}" ${m.key === cur ? 'selected' : ''}>${m.label}</option>`).join('');
+      const monthKey = sel.value || months[0]?.key;
+      const { projections } = getProjectedSavings();
+      const proj = projections.find(p => p.monthKey === monthKey);
+      const byCat = getSpendingByCategoryForMonth(monthKey);
+      const totalSpent = Object.values(byCat).reduce((a, b) => a + b, 0);
+      const income = getIncomeForMonth(monthKey);
+      const net = income - totalSpent;
+      const doneKey = `checklist-${monthKey}`;
+      const done = state.checklistDone[doneKey] || {};
+
+      const ccBal = state.creditCardBalance[monthKey] ?? 0;
+      const items = [
+        { id: 'cc', text: `Credit card balance paid to $0${ccBal > 0 ? ` (Current: $${ccBal.toFixed(0)})` : ''}`, done: done.cc },
+        { id: 'net600', text: `Net savings ≥ $${state.monthlySavingsGoal} (Projected: $${(proj?.net ?? net).toFixed(0)})`, done: done.net600 },
+        { id: 'review', text: 'Review spending by category for next month', done: done.review },
+      ];
+      const container = document.getElementById('month-checklist');
+      container.innerHTML = `
+        <div class="form-group" style="margin-bottom:1rem;">
+          <label>Current credit card balance for ${months.find(m=>m.key===monthKey)?.label || monthKey}</label>
+          <input type="number" id="cc-balance-input" value="${ccBal}" min="0" step="10" placeholder="0" style="max-width:150px;">
+        </div>
+        <ul class="checklist" style="list-style:none;">
+          ${items.map(it => `
+            <li class="${it.done ? 'done' : 'pending'}">
+              <input type="checkbox" ${it.done ? 'checked' : ''} data-month="${monthKey}" data-id="${it.id}">
+              <span>${it.text}</span>
+            </li>
+          `).join('')}
+        </ul>
+      `;
+      document.getElementById('cc-balance-input')?.addEventListener('change', (e) => {
+        state.creditCardBalance[monthKey] = parseFloat(e.target.value) || 0;
+        saveState();
+        renderChecklist();
+        renderOverview();
+      });
+      container.querySelectorAll('input[type="checkbox"]').forEach(cb => {
+        cb.addEventListener('change', () => {
+          const key = `checklist-${cb.dataset.month}`;
+          if (!state.checklistDone[key]) state.checklistDone[key] = {};
+          state.checklistDone[key][cb.dataset.id] = cb.checked;
+          saveState();
+          renderChecklist();
+        });
+      });
+    }
+
+    function bindPhase2() {
+      const startEl = document.getElementById('p2-start-date');
+      const endEl = document.getElementById('p2-end-date');
+      if (startEl) {
+        startEl.value = state.phase2Start || '';
+        startEl.addEventListener('change', () => { state.phase2Start = startEl.value; saveState(); renderAll(); });
+      }
+      if (endEl) {
+        endEl.value = state.phase2End || '';
+        endEl.addEventListener('change', () => { state.phase2End = endEl.value; saveState(); renderAll(); });
+      }
+    }
+
+    function renderPhase2() {
+      const startingCash = getPhase2StartingCash();
+      const el = document.getElementById('p2-starting-display');
+      if (el) el.textContent = startingCash.toFixed(0);
+
+      const { projections } = getPhase2Projections();
+      const monthGlance = document.getElementById('p2-month-glance');
+      if (monthGlance) {
+        monthGlance.innerHTML = projections.map(p => `
+          <div style="margin-bottom:0.75rem;padding:0.75rem;background:var(--bg-tertiary);border-radius:var(--radius-sm);">
+            <div style="font-weight:600;margin-bottom:0.25rem;">${p.label}</div>
+            <div style="font-size:0.85rem;color:var(--text-secondary);">
+              Income: $${p.income.toFixed(0)} · Expenses: $${p.expenses.toFixed(0)} · Net: <span class="${p.net >= 0 ? 'text-success' : 'text-danger'}">$${p.net.toFixed(0)}</span>
+            </div>
+            <div style="font-size:0.8rem;color:var(--text-muted);">Ending cash: $${p.endingCash.toFixed(0)}</div>
+          </div>
+        `).join('') || '<p style="color:var(--text-muted);">Configure dates in Setup.</p>';
+      }
+
+      const totalExpenses = projections.reduce((s, p) => s + p.expenses, 0);
+      const totalIncome = projections.reduce((s, p) => s + p.income, 0);
+      const gap = totalExpenses - totalIncome - startingCash;
+      const gapEl = document.getElementById('p2-income-gap');
+      if (gapEl) {
+        gapEl.innerHTML = `
+          <div class="goal-stats">
+            <div class="goal-stat">Total expenses: $<span>${totalExpenses.toFixed(0)}</span></div>
+            <div class="goal-stat">Total income: $<span>${totalIncome.toFixed(0)}</span></div>
+            <div class="goal-stat">Starting cash: $<span>${startingCash.toFixed(0)}</span></div>
+            <div class="goal-stat">Ending cash: $<span>${projections[projections.length - 1]?.endingCash.toFixed(0) ?? 0}</span></div>
+          </div>
+          <p style="margin-top:1rem;color:var(--text-secondary);">
+            ${gap > 0 ? `You need $${gap.toFixed(0)} more income total (or cut expenses by that much). ~$${(gap / Math.max(1, projections.length)).toFixed(0)}/month more.` : `You have $${(-gap).toFixed(0)} buffer.`}
+          </p>
+        `;
+      }
+
+      const alerts = getPhase2Warnings();
+      const warnEl = document.getElementById('p2-warnings');
+      if (warnEl) {
+        warnEl.innerHTML = alerts.map(a => `
+          <div class="alert alert-${a.type}">
+            <span class="alert-icon">${a.type === 'success' ? '✓' : a.type === 'danger' ? '!' : a.type === 'warning' ? '⚠' : 'ℹ'}</span>
+            <div class="alert-content">
+              <div class="alert-title">${a.title}</div>
+              <div>${a.msg}</div>
+            </div>
+          </div>
+        `).join('');
+      }
+
+      renderPhase2Chart(projections, startingCash);
+
+      const months = getPhase2Months();
+      document.getElementById('p2-monthly-income').innerHTML = months.map(m => `
+        <div class="form-group" style="display:flex;align-items:end;gap:1rem;margin-bottom:0.75rem;">
+          <div style="flex:1;min-width:180px;">
+            <label>${m.label}</label>
+            <input type="number" class="p2-income-input" data-month="${m.key}" value="${state.phase2MonthlyIncome[m.key] ?? 400}" min="0" step="10">
+          </div>
+        </div>
+      `).join('');
+      document.querySelectorAll('.p2-income-input').forEach(inp => {
+        inp.addEventListener('change', () => {
+          state.phase2MonthlyIncome[inp.dataset.month] = parseFloat(inp.value) || 0;
+          saveState();
+          renderPhase2();
+        });
+      });
+
+      document.getElementById('p2-expense-categories').innerHTML = (state.phase2Categories || []).map(c => `
+        <div class="form-group" style="display:flex;gap:0.75rem;align-items:end;flex-wrap:wrap;">
+          <div style="flex:1;min-width:140px;">
+            <label>${c.name}</label>
+            <input type="text" value="${c.name}" data-id="${c.id}" data-f="name" class="p2-cat-input" placeholder="Name">
+          </div>
+          <div style="width:120px;">
+            <label>Monthly budget</label>
+            <input type="number" value="${c.monthlyBudget || ''}" data-id="${c.id}" data-f="monthlyBudget" class="p2-cat-input" min="0" step="10" placeholder="0">
+          </div>
+        </div>
+      `).join('');
+      document.querySelectorAll('.p2-cat-input').forEach(inp => {
+        inp.addEventListener('change', () => {
+          const cat = state.phase2Categories.find(x => x.id === inp.dataset.id);
+          if (cat) {
+            cat[inp.dataset.f] = inp.dataset.f === 'monthlyBudget' ? parseFloat(inp.value) || 0 : inp.value;
+            saveState();
+            renderPhase2();
+          }
+        });
+      });
+
+      const p2MonthSel = document.getElementById('p2-track-month');
+      const p2WeekSel = document.getElementById('p2-track-week');
+      if (p2MonthSel && months.length) {
+        const curVal = p2MonthSel.value || months[0].key;
+        p2MonthSel.innerHTML = months.map(m => `<option value="${m.key}" ${m.key === curVal ? 'selected' : ''}>${m.label}</option>`).join('');
+        if (!p2MonthSel.dataset.bound) {
+          p2MonthSel.dataset.bound = '1';
+          p2MonthSel.addEventListener('change', () => renderPhase2Tracking());
+        }
+      }
+      if (p2WeekSel) {
+        const curW = p2WeekSel.value || '1';
+        p2WeekSel.innerHTML = [1,2,3,4,5].map(w => `<option value="${w}" ${w == curW ? 'selected' : ''}>Week ${w}</option>`).join('');
+        if (!p2WeekSel.dataset.bound) {
+          p2WeekSel.dataset.bound = '1';
+          p2WeekSel.addEventListener('change', () => renderPhase2Tracking());
+        }
+      }
+      renderPhase2Tracking();
+    }
+
+    function renderPhase2Tracking() {
+      const months = getPhase2Months();
+      const monthKey = document.getElementById('p2-track-month')?.value || months[0]?.key;
+      const weekNum = parseInt(document.getElementById('p2-track-week')?.value) || 1;
+      const spendKey = `p2-${monthKey}-${weekNum}`;
+      const weekData = (state.phase2Spending || {})[spendKey] || {};
+      document.getElementById('p2-weekly-spending-inputs').innerHTML = `
+        <div class="grid-2">
+          ${(state.phase2Categories || []).map(c => `
+            <div class="form-group">
+              <label>${c.name}</label>
+              <input type="number" class="p2-spend-input" data-key="${spendKey}" data-cat="${c.id}" value="${weekData[c.id] || ''}" min="0" step="0.01" placeholder="0">
+            </div>
+          `).join('')}
+        </div>
+      `;
+      document.querySelectorAll('.p2-spend-input').forEach(inp => {
+        inp.addEventListener('change', () => {
+          if (!state.phase2Spending[inp.dataset.key]) state.phase2Spending[inp.dataset.key] = {};
+          state.phase2Spending[inp.dataset.key][inp.dataset.cat] = parseFloat(inp.value) || 0;
+          saveState();
+          renderPhase2();
+        });
+      });
+    }
+
+    function renderPhase2Chart(projections, startingCash) {
+      const canvas = document.getElementById('chart-p2');
+      if (!canvas || !projections.length) return;
+      const ctx = canvas.getContext('2d');
+      const rect = canvas.getBoundingClientRect();
+      canvas.width = rect.width;
+      canvas.height = rect.height;
+      const w = canvas.width;
+      const h = canvas.height;
+      ctx.clearRect(0, 0, w, h);
+
+      const labels = projections.map(p => p.label.split(' ')[0]);
+      const values = [startingCash, ...projections.map(p => p.endingCash)];
+      const minVal = Math.min(...values, 0);
+      const maxVal = Math.max(...values, startingCash);
+      const range = maxVal - minVal || 1;
+      const pad = { l: 45, r: 20, t: 20, b: 35 };
+      const gx = w - pad.l - pad.r;
+      const gy = h - pad.t - pad.b;
+
+      ctx.fillStyle = getComputedStyle(document.documentElement).getPropertyValue('--text-secondary').trim() || '#8b949e';
+      ctx.font = '12px DM Sans';
+      ctx.textAlign = 'center';
+      ['Start', ...labels].forEach((l, i) => {
+        const x = pad.l + (i + 0.5) * (gx / values.length);
+        ctx.fillText(l, x, h - 8);
+      });
+
+      ctx.strokeStyle = getComputedStyle(document.documentElement).getPropertyValue('--border').trim() || '#30363d';
+      ctx.beginPath();
+      ctx.moveTo(pad.l, pad.t);
+      ctx.lineTo(pad.l, h - pad.b);
+      ctx.lineTo(w - pad.r, h - pad.b);
+      ctx.stroke();
+
+      const zeroY = minVal < 0 ? pad.t + gy * (1 - (-minVal) / range) : h - pad.b;
+      if (minVal < 0) {
+        ctx.strokeStyle = getComputedStyle(document.documentElement).getPropertyValue('--danger').trim() || '#f85149';
+        ctx.setLineDash([4, 4]);
+        ctx.beginPath();
+        ctx.moveTo(pad.l, zeroY);
+        ctx.lineTo(w - pad.r, zeroY);
+        ctx.stroke();
+        ctx.setLineDash([]);
+      }
+
+      const lineW = 3;
+      ctx.strokeStyle = getComputedStyle(document.documentElement).getPropertyValue('--accent').trim() || '#58a6ff';
+      ctx.lineWidth = lineW;
+      ctx.beginPath();
+      values.forEach((v, i) => {
+        const x = pad.l + (i + 0.5) * (gx / values.length);
+        const y = h - pad.b - ((v - minVal) / range) * gy;
+        if (i === 0) ctx.moveTo(x, y);
+        else ctx.lineTo(x, y);
+      });
+      ctx.stroke();
+    }
+
+    // ─── Start ─────────────────────────────────────────────────────────────────
+    init();
+  </script>
+</body>
+</html>
