@@ -271,9 +271,10 @@
       </div>
     </header>
 
-    <div class="phase-switcher" style="display:flex;gap:0.5rem;margin-bottom:1.5rem;padding:0.5rem;background:var(--bg-secondary);border-radius:var(--radius);border:1px solid var(--border);">
-      <button class="phase-btn active" data-phase="1" style="flex:1;padding:0.75rem;border-radius:var(--radius-sm);border:2px solid var(--accent);background:rgba(88,166,255,0.15);color:var(--accent);font-weight:600;cursor:pointer;transition:all 0.2s;">Phase 1: Florida Trip</button>
-      <button class="phase-btn" data-phase="2" style="flex:1;padding:0.75rem;border-radius:var(--radius-sm);border:2px solid var(--border);background:var(--bg-tertiary);color:var(--text-secondary);font-weight:600;cursor:pointer;transition:all 0.2s;">Phase 2: Post‑Florida (June–Aug)</button>
+    <div class="phase-switcher" style="display:flex;gap:0.5rem;margin-bottom:1.5rem;padding:0.5rem;background:var(--bg-secondary);border-radius:var(--radius);border:1px solid var(--border);flex-wrap:wrap;">
+      <button class="phase-btn active" data-phase="1" style="flex:1;min-width:120px;padding:0.75rem;border-radius:var(--radius-sm);border:2px solid var(--accent);background:rgba(88,166,255,0.15);color:var(--accent);font-weight:600;cursor:pointer;transition:all 0.2s;">Phase 1: Florida Trip</button>
+      <button class="phase-btn" data-phase="2" style="flex:1;min-width:120px;padding:0.75rem;border-radius:var(--radius-sm);border:2px solid var(--border);background:var(--bg-tertiary);color:var(--text-secondary);font-weight:600;cursor:pointer;transition:all 0.2s;">Phase 2: Post‑Florida (June–Aug)</button>
+      <button class="phase-btn" data-phase="3" style="flex:1;min-width:120px;padding:0.75rem;border-radius:var(--radius-sm);border:2px solid var(--border);background:var(--bg-tertiary);color:var(--text-secondary);font-weight:600;cursor:pointer;transition:all 0.2s;">Loan Funds</button>
     </div>
 
     <!-- PHASE 1 -->
@@ -538,6 +539,23 @@
       </div>
     </div>
     </div>
+
+    <!-- LOAN FUNDS -->
+    <div id="phase-3-section" style="display:none;">
+      <div class="card">
+        <h2>Loan Funds Tracker</h2>
+        <p style="color:var(--text-secondary);margin-bottom:1rem;">Track how much of your $26,500 loan has been used.</p>
+        <div class="goal-progress" style="margin-bottom:0;">
+          <div style="font-size:1.25rem;font-weight:600;margin-bottom:0.25rem;">Starting: $26,500</div>
+          <div id="loan-remaining-display" style="font-size:1.5rem;font-family:JetBrains Mono,monospace;color:var(--accent);"></div>
+        </div>
+      </div>
+      <div class="card">
+        <h2>Expenses</h2>
+        <p style="color:var(--text-secondary);margin-bottom:1rem;">Enter amount spent for each category.</p>
+        <div id="loan-expenses-grid" class="grid-2"></div>
+      </div>
+    </div>
   </div>
 
   <script>
@@ -559,6 +577,30 @@
     ];
 
     const STORAGE_KEY = 'florida_budget_data';
+    const LOAN_FUND_STARTING = 26500;
+    const LOAN_FUND_EXPENSES = [
+      'Inspection Ticket',
+      'Credit Cards',
+      'Chemo 1',
+      'Chemo 2',
+      'Chemo 3',
+      'Chemo 4',
+      'Court',
+      'Bakery Floors/Ceilings',
+      'Bakery Loss March',
+      'Bakery Loss April',
+      'Bakery Loss May',
+      'Bakery Loss June',
+      'Bakery Loss July',
+      'OG Loan Payment March',
+      'OG Loan Payment April',
+      'OG Loan Payment May',
+      'OG Loan Payment June',
+      '401k Loan Payment March',
+      '401k Loan Payment April',
+      '401k Loan Payment May',
+      '401k Loan Payment June',
+    ];
 
     // ─── State ────────────────────────────────────────────────────────────────
     let state = {
@@ -580,6 +622,7 @@
       phase2MonthlyIncome: {},
       phase2Categories: [],
       phase2Spending: {},
+      loanFundExpenses: {},
     };
 
     // ─── Init ─────────────────────────────────────────────────────────────────
@@ -591,6 +634,7 @@
       syncRentToCategories();
       bindPhaseSwitcher();
       bindExportImport();
+      bindLoanFunds();
       bindTabs();
       bindConfig();
       bindPaychecks();
@@ -657,6 +701,7 @@
         phase2MonthlyIncome: {},
         phase2Categories: [],
         phase2Spending: {},
+        loanFundExpenses: {},
       };
       Object.assign(state, defaults, {
         ...rest,
@@ -668,6 +713,7 @@
         phase2MonthlyIncome: rest.phase2MonthlyIncome && typeof rest.phase2MonthlyIncome === 'object' ? rest.phase2MonthlyIncome : defaults.phase2MonthlyIncome,
         phase2Categories: Array.isArray(rest.phase2Categories) ? rest.phase2Categories : defaults.phase2Categories,
         phase2Spending: rest.phase2Spending && typeof rest.phase2Spending === 'object' ? rest.phase2Spending : defaults.phase2Spending,
+        loanFundExpenses: rest.loanFundExpenses && typeof rest.loanFundExpenses === 'object' ? rest.loanFundExpenses : defaults.loanFundExpenses,
       });
       saveState();
       ensureCategories();
@@ -739,6 +785,7 @@
     function bindPhaseSwitcher() {
       document.getElementById('phase-1-section').style.display = state.currentPhase === 1 ? 'block' : 'none';
       document.getElementById('phase-2-section').style.display = state.currentPhase === 2 ? 'block' : 'none';
+      document.getElementById('phase-3-section').style.display = state.currentPhase === 3 ? 'block' : 'none';
       document.querySelectorAll('.phase-btn').forEach(b => {
         b.classList.toggle('active', parseInt(b.dataset.phase) === state.currentPhase);
       });
@@ -749,6 +796,7 @@
           btn.classList.add('active');
           document.getElementById('phase-1-section').style.display = state.currentPhase === 1 ? 'block' : 'none';
           document.getElementById('phase-2-section').style.display = state.currentPhase === 2 ? 'block' : 'none';
+          document.getElementById('phase-3-section').style.display = state.currentPhase === 3 ? 'block' : 'none';
           saveState();
           renderAll();
         });
@@ -777,6 +825,41 @@
         };
         reader.readAsText(file);
       });
+    }
+
+    function bindLoanFunds() {
+      document.getElementById('loan-expenses-grid').addEventListener('change', (e) => {
+        if (e.target.classList.contains('loan-expense-input')) {
+          const id = e.target.dataset.id;
+          state.loanFundExpenses[id] = parseFloat(e.target.value) || 0;
+          saveState();
+          renderLoanFunds();
+        }
+      });
+    }
+
+    function getLoanFundId(label) {
+      return label.toLowerCase().replace(/\s+/g, '-').replace(/\//g, '-').replace(/[^a-z0-9-]/g, '');
+    }
+
+    function renderLoanFunds() {
+      const totalUsed = LOAN_FUND_EXPENSES.reduce((sum, label) => {
+        const id = getLoanFundId(label);
+        return sum + (state.loanFundExpenses[id] || 0);
+      }, 0);
+      const remaining = Math.max(0, LOAN_FUND_STARTING - totalUsed);
+      document.getElementById('loan-remaining-display').textContent = `Remaining: $${remaining.toLocaleString()}`;
+
+      document.getElementById('loan-expenses-grid').innerHTML = LOAN_FUND_EXPENSES.map(label => {
+        const id = getLoanFundId(label);
+        const val = state.loanFundExpenses[id] ?? '';
+        return `
+          <div class="form-group">
+            <label>${label}</label>
+            <input type="number" class="loan-expense-input" data-id="${id}" value="${val}" min="0" step="0.01" placeholder="0">
+          </div>
+        `;
+      }).join('');
     }
 
     // ─── Tabs ──────────────────────────────────────────────────────────────────
@@ -1094,6 +1177,7 @@
       renderScenarios();
       renderChecklist();
       renderPhase2();
+      renderLoanFunds();
     }
 
     function renderOverview() {
