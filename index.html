@@ -249,6 +249,7 @@
       margin-left: 0.5rem;
     }
 
+    .loan-row { display: grid; grid-template-columns: 1fr auto 80px auto; gap: 0.5rem 1rem; align-items: end; margin-bottom: 0.75rem; }
     @media (max-width: 640px) {
       .app { padding: 0.75rem; }
       .goal-stats { flex-direction: column; }
@@ -256,6 +257,11 @@
       header h1 { font-size: 1.4rem; }
       .tabs { gap: 0.25rem; }
       .tab { padding: 0.5rem 0.75rem; font-size: 0.85rem; }
+      .loan-row { grid-template-columns: 1fr auto; }
+      .loan-row .form-group:first-child { grid-column: 1; }
+      .loan-row .form-group:nth-child(2) { grid-column: 2; }
+      .loan-row > div:nth-child(3) { display: none; }
+      .loan-row > div:last-child { grid-column: 1 / -1; }
     }
   </style>
 </head>
@@ -544,16 +550,29 @@
     <div id="phase-3-section" style="display:none;">
       <div class="card">
         <h2>Loan Funds Tracker</h2>
-        <p style="color:var(--text-secondary);margin-bottom:1rem;">Track how much of your $26,500 loan has been used.</p>
+        <p style="color:var(--text-secondary);margin-bottom:1rem;">Starting $26,500 + additions − expenses = remaining.</p>
         <div class="goal-progress" style="margin-bottom:0;">
           <div style="font-size:1.25rem;font-weight:600;margin-bottom:0.25rem;">Starting: $26,500</div>
           <div id="loan-remaining-display" style="font-size:1.5rem;font-family:JetBrains Mono,monospace;color:var(--accent);"></div>
         </div>
       </div>
       <div class="card">
-        <h2>Expenses</h2>
-        <p style="color:var(--text-secondary);margin-bottom:1rem;">Enter amount spent for each category.</p>
-        <div id="loan-expenses-grid" class="grid-2"></div>
+        <h2>Payments Already Made</h2>
+        <p style="color:var(--text-secondary);margin-bottom:1rem;">Expenses you have already paid. Amounts are subtracted from the pot.</p>
+        <div id="loan-expenses-paid-list"></div>
+        <button class="btn btn-primary btn-sm" id="loan-add-paid-row" style="margin-top:0.75rem;">Add row</button>
+      </div>
+      <div class="card">
+        <h2>Known Future Payments</h2>
+        <p style="color:var(--text-secondary);margin-bottom:1rem;">Expenses you know are coming. Amounts are subtracted from the pot.</p>
+        <div id="loan-expenses-future-list"></div>
+        <button class="btn btn-primary btn-sm" id="loan-add-future-row" style="margin-top:0.75rem;">Add row</button>
+      </div>
+      <div class="card">
+        <h2>Additions to Pot</h2>
+        <p style="color:var(--text-secondary);margin-bottom:1rem;">Add money when it comes in. Each row adds to the available amount.</p>
+        <div id="loan-additions-list"></div>
+        <button class="btn btn-primary btn-sm" id="loan-add-addition-row" style="margin-top:0.75rem;">Add addition row</button>
       </div>
     </div>
   </div>
@@ -578,29 +597,6 @@
 
     const STORAGE_KEY = 'florida_budget_data';
     const LOAN_FUND_STARTING = 26500;
-    const LOAN_FUND_EXPENSES = [
-      'Inspection Ticket',
-      'Credit Cards',
-      'Chemo 1',
-      'Chemo 2',
-      'Chemo 3',
-      'Chemo 4',
-      'Court',
-      'Bakery Floors/Ceilings',
-      'Bakery Loss March',
-      'Bakery Loss April',
-      'Bakery Loss May',
-      'Bakery Loss June',
-      'Bakery Loss July',
-      'OG Loan Payment March',
-      'OG Loan Payment April',
-      'OG Loan Payment May',
-      'OG Loan Payment June',
-      '401k Loan Payment March',
-      '401k Loan Payment April',
-      '401k Loan Payment May',
-      '401k Loan Payment June',
-    ];
 
     // ─── State ────────────────────────────────────────────────────────────────
     let state = {
@@ -622,7 +618,9 @@
       phase2MonthlyIncome: {},
       phase2Categories: [],
       phase2Spending: {},
-      loanFundExpenses: {},
+      loanFundExpensesPaid: [{ name: '', amount: 0 }],
+      loanFundExpensesFuture: [{ name: '', amount: 0 }],
+      loanFundAdditions: [{ description: '', amount: 0 }],
     };
 
     // ─── Init ─────────────────────────────────────────────────────────────────
@@ -652,6 +650,18 @@
           state = { ...state, ...parsed };
           if (parsed.categories?.length) state.categories = parsed.categories;
           if (parsed.phase2Categories?.length) state.phase2Categories = parsed.phase2Categories;
+          if (parsed.loanFundExpenses && !parsed.loanFundExpensesPaid) {
+            const migrated = Object.entries(parsed.loanFundExpenses)
+              .filter(([, amt]) => amt > 0)
+              .map(([id, amount]) => ({ name: id.replace(/-/g, ' '), amount }));
+            state.loanFundExpensesPaid = migrated.length ? migrated : [{ name: '', amount: 0 }];
+            state.loanFundExpensesFuture = [{ name: '', amount: 0 }];
+          }
+          if (parsed.loanFundItems && !parsed.loanFundExpensesPaid) {
+            const items = parsed.loanFundItems.filter(it => it.name || it.amount);
+            state.loanFundExpensesPaid = items.length ? items : [{ name: '', amount: 0 }];
+            state.loanFundExpensesFuture = [{ name: '', amount: 0 }];
+          }
         }
       } catch (e) {
         console.warn('Could not load saved data:', e);
@@ -701,7 +711,9 @@
         phase2MonthlyIncome: {},
         phase2Categories: [],
         phase2Spending: {},
-        loanFundExpenses: {},
+        loanFundExpensesPaid: [{ name: '', amount: 0 }],
+        loanFundExpensesFuture: [{ name: '', amount: 0 }],
+        loanFundAdditions: [{ description: '', amount: 0 }],
       };
       Object.assign(state, defaults, {
         ...rest,
@@ -713,7 +725,9 @@
         phase2MonthlyIncome: rest.phase2MonthlyIncome && typeof rest.phase2MonthlyIncome === 'object' ? rest.phase2MonthlyIncome : defaults.phase2MonthlyIncome,
         phase2Categories: Array.isArray(rest.phase2Categories) ? rest.phase2Categories : defaults.phase2Categories,
         phase2Spending: rest.phase2Spending && typeof rest.phase2Spending === 'object' ? rest.phase2Spending : defaults.phase2Spending,
-        loanFundExpenses: rest.loanFundExpenses && typeof rest.loanFundExpenses === 'object' ? rest.loanFundExpenses : defaults.loanFundExpenses,
+        loanFundExpensesPaid: Array.isArray(rest.loanFundExpensesPaid) && rest.loanFundExpensesPaid.length ? rest.loanFundExpensesPaid : defaults.loanFundExpensesPaid,
+        loanFundExpensesFuture: Array.isArray(rest.loanFundExpensesFuture) && rest.loanFundExpensesFuture.length ? rest.loanFundExpensesFuture : defaults.loanFundExpensesFuture,
+        loanFundAdditions: Array.isArray(rest.loanFundAdditions) && rest.loanFundAdditions.length ? rest.loanFundAdditions : defaults.loanFundAdditions,
       });
       saveState();
       ensureCategories();
@@ -828,38 +842,155 @@
     }
 
     function bindLoanFunds() {
-      document.getElementById('loan-expenses-grid').addEventListener('change', (e) => {
-        if (e.target.classList.contains('loan-expense-input')) {
-          const id = e.target.dataset.id;
-          state.loanFundExpenses[id] = parseFloat(e.target.value) || 0;
+      document.getElementById('loan-add-paid-row').addEventListener('click', () => {
+        state.loanFundExpensesPaid.push({ name: '', amount: 0 });
+        saveState();
+        renderLoanFunds();
+      });
+      document.getElementById('loan-add-future-row').addEventListener('click', () => {
+        state.loanFundExpensesFuture.push({ name: '', amount: 0 });
+        saveState();
+        renderLoanFunds();
+      });
+      document.getElementById('loan-add-addition-row').addEventListener('click', () => {
+        state.loanFundAdditions.push({ description: '', amount: 0 });
+        saveState();
+        renderLoanFunds();
+      });
+      document.getElementById('loan-expenses-paid-list').addEventListener('change', (e) => {
+        const i = parseInt(e.target.dataset.i);
+        if (isNaN(i)) return;
+        if (e.target.classList.contains('loan-item-name')) {
+          state.loanFundExpensesPaid[i].name = e.target.value;
+          saveState();
+        } else if (e.target.classList.contains('loan-item-amount')) {
+          state.loanFundExpensesPaid[i].amount = parseFloat(e.target.value) || 0;
           saveState();
           renderLoanFunds();
         }
       });
-    }
-
-    function getLoanFundId(label) {
-      return label.toLowerCase().replace(/\s+/g, '-').replace(/\//g, '-').replace(/[^a-z0-9-]/g, '');
+      document.getElementById('loan-expenses-paid-list').addEventListener('click', (e) => {
+        if (e.target.classList.contains('loan-remove-row')) {
+          const i = parseInt(e.target.dataset.i);
+          if (!isNaN(i) && state.loanFundExpensesPaid.length > 1) {
+            state.loanFundExpensesPaid.splice(i, 1);
+            saveState();
+            renderLoanFunds();
+          }
+        }
+      });
+      document.getElementById('loan-expenses-future-list').addEventListener('change', (e) => {
+        const i = parseInt(e.target.dataset.i);
+        if (isNaN(i)) return;
+        if (e.target.classList.contains('loan-item-name')) {
+          state.loanFundExpensesFuture[i].name = e.target.value;
+          saveState();
+        } else if (e.target.classList.contains('loan-item-amount')) {
+          state.loanFundExpensesFuture[i].amount = parseFloat(e.target.value) || 0;
+          saveState();
+          renderLoanFunds();
+        }
+      });
+      document.getElementById('loan-expenses-future-list').addEventListener('click', (e) => {
+        if (e.target.classList.contains('loan-remove-row')) {
+          const i = parseInt(e.target.dataset.i);
+          if (!isNaN(i) && state.loanFundExpensesFuture.length > 1) {
+            state.loanFundExpensesFuture.splice(i, 1);
+            saveState();
+            renderLoanFunds();
+          }
+        }
+      });
+      document.getElementById('loan-additions-list').addEventListener('change', (e) => {
+        const i = parseInt(e.target.dataset.i);
+        if (isNaN(i)) return;
+        if (e.target.classList.contains('loan-addition-desc')) {
+          state.loanFundAdditions[i].description = e.target.value;
+          saveState();
+        } else if (e.target.classList.contains('loan-addition-amount')) {
+          state.loanFundAdditions[i].amount = parseFloat(e.target.value) || 0;
+          saveState();
+          renderLoanFunds();
+        }
+      });
+      document.getElementById('loan-additions-list').addEventListener('click', (e) => {
+        if (e.target.classList.contains('loan-remove-addition')) {
+          const i = parseInt(e.target.dataset.i);
+          if (!isNaN(i) && state.loanFundAdditions.length > 1) {
+            state.loanFundAdditions.splice(i, 1);
+            saveState();
+            renderLoanFunds();
+          }
+        }
+      });
     }
 
     function renderLoanFunds() {
-      const totalUsed = LOAN_FUND_EXPENSES.reduce((sum, label) => {
-        const id = getLoanFundId(label);
-        return sum + (state.loanFundExpenses[id] || 0);
-      }, 0);
-      const remaining = Math.max(0, LOAN_FUND_STARTING - totalUsed);
-      document.getElementById('loan-remaining-display').textContent = `Remaining: $${remaining.toLocaleString()}`;
+      if (!state.loanFundExpensesPaid?.length) state.loanFundExpensesPaid = [{ name: '', amount: 0 }];
+      if (!state.loanFundExpensesFuture?.length) state.loanFundExpensesFuture = [{ name: '', amount: 0 }];
+      if (!state.loanFundAdditions?.length) state.loanFundAdditions = [{ description: '', amount: 0 }];
+      const paid = state.loanFundExpensesPaid;
+      const future = state.loanFundExpensesFuture;
+      const additions = state.loanFundAdditions;
+      const totalPaid = paid.reduce((sum, it) => sum + (it.amount || 0), 0);
+      const totalFuture = future.reduce((sum, it) => sum + (it.amount || 0), 0);
+      const totalExpenses = totalPaid + totalFuture;
+      const totalAdditions = additions.reduce((sum, it) => sum + (it.amount || 0), 0);
+      const remaining = Math.max(0, LOAN_FUND_STARTING + totalAdditions - totalExpenses);
+      document.getElementById('loan-remaining-display').innerHTML = `
+        <div>+ Additions: $${totalAdditions.toLocaleString()}</div>
+        <div>− Paid: $${totalPaid.toLocaleString()} · Future: $${totalFuture.toLocaleString()}</div>
+        <div style="margin-top:0.5rem;font-weight:600;">Remaining: $${remaining.toLocaleString()}</div>
+      `;
 
-      document.getElementById('loan-expenses-grid').innerHTML = LOAN_FUND_EXPENSES.map(label => {
-        const id = getLoanFundId(label);
-        const val = state.loanFundExpenses[id] ?? '';
-        return `
-          <div class="form-group">
-            <label>${label}</label>
-            <input type="number" class="loan-expense-input" data-id="${id}" value="${val}" min="0" step="0.01" placeholder="0">
+      const renderExpenseList = (items) => `
+        <div class="loan-row" style="font-size:0.8rem;color:var(--text-muted);margin-bottom:0.5rem;">
+          <div>Expense name</div>
+          <div>Amount</div>
+          <div></div>
+          <div></div>
+        </div>
+        ${items.map((it, i) => `
+          <div class="loan-row">
+            <div class="form-group" style="margin:0;">
+              <input type="text" class="loan-item-name" data-i="${i}" value="${String(it.name || '').replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;')}" placeholder="Expense name">
+            </div>
+            <div class="form-group" style="margin:0;max-width:120px;">
+              <input type="number" class="loan-item-amount" data-i="${i}" value="${it.amount || ''}" min="0" step="0.01" placeholder="0">
+            </div>
+            <div></div>
+            <div>
+              <button type="button" class="btn btn-ghost btn-sm loan-remove-row" data-i="${i}" ${items.length <= 1 ? 'disabled' : ''}>Remove</button>
+            </div>
           </div>
-        `;
-      }).join('');
+        `).join('')}
+      `;
+
+      document.getElementById('loan-expenses-paid-list').innerHTML = renderExpenseList(paid);
+      document.getElementById('loan-expenses-future-list').innerHTML = renderExpenseList(future);
+
+      document.getElementById('loan-additions-list').innerHTML = `
+        <div class="loan-row" style="font-size:0.8rem;color:var(--text-muted);margin-bottom:0.5rem;">
+          <div>Description</div>
+          <div>Amount</div>
+          <div></div>
+          <div></div>
+        </div>
+        ${additions.map((it, i) => `
+          <div class="loan-row">
+            <div class="form-group" style="margin:0;">
+              <input type="text" class="loan-addition-desc" data-i="${i}" value="${String(it.description || '').replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;')}" placeholder="e.g. Paycheck, refund">
+            </div>
+            <div class="form-group" style="margin:0;max-width:120px;">
+              <input type="number" class="loan-addition-amount" data-i="${i}" value="${it.amount || ''}" min="0" step="0.01" placeholder="0">
+            </div>
+            <div></div>
+            <div>
+              <button type="button" class="btn btn-ghost btn-sm loan-remove-addition" data-i="${i}" ${additions.length <= 1 ? 'disabled' : ''}>Remove</button>
+            </div>
+          </div>
+        `).join('')}
+      `;
     }
 
     // ─── Tabs ──────────────────────────────────────────────────────────────────
